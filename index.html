@@ -1,0 +1,4662 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+<title>Bharat Sales Intelligence — Sales & Revenue Dashboard</title>
+
+<!-- Chart.js -->
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+<!-- Excel Reader -->
+<script src="https://cdn.jsdelivr.net/npm/xlsx/dist/xlsx.full.min.js"></script>
+
+<!-- CSV Reader -->
+<script src="https://cdn.jsdelivr.net/npm/papaparse@5.4.3/papaparse.min.js"></script>
+
+<!-- SQLite Reader -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/sql.js/1.10.3/sql-wasm.js"></script>
+
+<style>
+
+/* =========================================================
+   GLOBAL THEME
+========================================================= */
+
+:root {
+    --bg: #070711;
+    --bg2: #0d0b18;
+
+    --panel: rgba(25, 21, 43, 0.88);
+    --panel2: rgba(32, 27, 54, 0.92);
+
+    --border: rgba(255,255,255,0.09);
+
+    --text: #faf9ff;
+    --muted: #aaa5bf;
+
+    --purple: #8b5cf6;
+    --violet: #a855f7;
+    --pink: #ec4899;
+    --cyan: #22d3ee;
+    --green: #34d399;
+    --yellow: #fbbf24;
+    --blue: #60a5fa;
+    --rose: #fb7185;
+}
+
+
+/* =========================================================
+   RESET
+========================================================= */
+
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+}
+
+
+html {
+    scroll-behavior: smooth;
+}
+
+
+body {
+    font-family:
+        Inter,
+        "Segoe UI",
+        Arial,
+        sans-serif;
+
+    color: var(--text);
+
+    min-height: 100vh;
+
+    background:
+        radial-gradient(
+            circle at 5% 5%,
+            rgba(139,92,246,.20),
+            transparent 25%
+        ),
+
+        radial-gradient(
+            circle at 95% 10%,
+            rgba(236,72,153,.13),
+            transparent 25%
+        ),
+
+        radial-gradient(
+            circle at 50% 100%,
+            rgba(34,211,238,.08),
+            transparent 30%
+        ),
+
+        linear-gradient(
+            135deg,
+            #05050b,
+            #0b0915,
+            #110c20
+        );
+
+    overflow-x: hidden;
+}
+
+
+/* =========================================================
+   BACKGROUND GLOW
+========================================================= */
+
+body::before {
+    content: "";
+
+    position: fixed;
+
+    width: 450px;
+    height: 450px;
+
+    left: -230px;
+    top: 25%;
+
+    border-radius: 50%;
+
+    background:
+        radial-gradient(
+            circle,
+            rgba(139,92,246,.10),
+            transparent 68%
+        );
+
+    pointer-events: none;
+
+    animation: floatLeft 12s ease-in-out infinite;
+}
+
+
+body::after {
+    content: "";
+
+    position: fixed;
+
+    width: 430px;
+    height: 430px;
+
+    right: -220px;
+    bottom: 10%;
+
+    border-radius: 50%;
+
+    background:
+        radial-gradient(
+            circle,
+            rgba(236,72,153,.08),
+            transparent 68%
+        );
+
+    pointer-events: none;
+
+    animation: floatRight 14s ease-in-out infinite;
+}
+
+
+@keyframes floatLeft {
+    0%,100% {
+        transform: translateY(0);
+    }
+
+    50% {
+        transform: translateY(-50px);
+    }
+}
+
+
+@keyframes floatRight {
+    0%,100% {
+        transform: translateY(0);
+    }
+
+    50% {
+        transform: translateY(50px);
+    }
+}
+
+
+/* =========================================================
+   HEADER
+========================================================= */
+
+.header {
+    position: sticky;
+    top: 0;
+
+    z-index: 1000;
+
+    background:
+        rgba(7,7,17,.80);
+
+    backdrop-filter: blur(22px);
+
+    border-bottom:
+        1px solid var(--border);
+}
+
+
+.header-inner {
+    width: 92%;
+    max-width: 1500px;
+
+    margin: auto;
+
+    padding: 18px 0;
+
+    display: flex;
+
+    justify-content: space-between;
+
+    align-items: center;
+
+    gap: 20px;
+}
+
+
+.brand {
+    display: flex;
+
+    align-items: center;
+
+    gap: 14px;
+}
+
+
+.logo {
+    width: 52px;
+    height: 52px;
+
+    border-radius: 17px;
+
+    display: flex;
+
+    align-items: center;
+
+    justify-content: center;
+
+    font-size: 25px;
+
+    background:
+        linear-gradient(
+            135deg,
+            var(--purple),
+            var(--pink)
+        );
+
+    box-shadow:
+        0 0 35px rgba(168,85,247,.30);
+}
+
+
+.brand h1 {
+    font-size: 24px;
+
+    letter-spacing: -.7px;
+}
+
+
+.brand p {
+    margin-top: 4px;
+
+    color: var(--muted);
+
+    font-size: 11px;
+}
+
+
+.live {
+    display: flex;
+
+    align-items: center;
+
+    gap: 8px;
+
+    padding: 9px 14px;
+
+    border-radius: 30px;
+
+    background:
+        rgba(52,211,153,.08);
+
+    border:
+        1px solid rgba(52,211,153,.25);
+
+    color: #6ee7b7;
+
+    font-size: 10px;
+
+    font-weight: 800;
+}
+
+
+.live-dot {
+    width: 7px;
+    height: 7px;
+
+    border-radius: 50%;
+
+    background: var(--green);
+
+    box-shadow:
+        0 0 12px var(--green);
+}
+
+
+/* =========================================================
+   MAIN
+========================================================= */
+
+.container {
+    width: 92%;
+
+    max-width: 1500px;
+
+    margin: auto;
+
+    padding:
+        30px 0 60px;
+}
+
+
+/* =========================================================
+   HERO
+========================================================= */
+
+.hero {
+    position: relative;
+
+    overflow: hidden;
+
+    padding: 34px;
+
+    margin-bottom: 20px;
+
+    border-radius: 25px;
+
+    background:
+        linear-gradient(
+            120deg,
+            rgba(139,92,246,.16),
+            rgba(236,72,153,.08),
+            rgba(34,211,238,.06)
+        );
+
+    border:
+        1px solid rgba(255,255,255,.10);
+
+    box-shadow:
+        0 20px 70px rgba(0,0,0,.18);
+}
+
+
+.hero::after {
+    content: "";
+
+    position: absolute;
+
+    width: 280px;
+    height: 280px;
+
+    right: -120px;
+    top: -150px;
+
+    border-radius: 50%;
+
+    background:
+        radial-gradient(
+            circle,
+            rgba(236,72,153,.18),
+            transparent 68%
+        );
+}
+
+
+.hero h2 {
+    font-size: 30px;
+
+    margin-bottom: 9px;
+
+    letter-spacing: -.8px;
+}
+
+
+.hero p {
+    max-width: 850px;
+
+    color: var(--muted);
+
+    font-size: 13px;
+
+    line-height: 1.75;
+}
+
+
+.hero-tag {
+    display: inline-block;
+
+    margin-top: 17px;
+
+    padding: 8px 14px;
+
+    border-radius: 20px;
+
+    background:
+        rgba(255,255,255,.055);
+
+    border:
+        1px solid rgba(255,255,255,.09);
+
+    color: #ddd8f3;
+
+    font-size: 10px;
+}
+
+
+/* =========================================================
+   PANELS
+========================================================= */
+
+.panel {
+    padding: 22px;
+
+    margin-bottom: 20px;
+
+    border-radius: 20px;
+
+    background:
+        linear-gradient(
+            145deg,
+            rgba(28,24,47,.86),
+            rgba(14,12,27,.91)
+        );
+
+    border:
+        1px solid var(--border);
+
+    box-shadow:
+        0 18px 60px rgba(0,0,0,.20);
+
+    backdrop-filter: blur(18px);
+}
+
+
+/* =========================================================
+   IMPORT SECTION
+========================================================= */
+
+.import-row {
+    display: flex;
+
+    justify-content: space-between;
+
+    align-items: center;
+
+    gap: 20px;
+
+    flex-wrap: wrap;
+}
+
+
+.import-title {
+    font-size: 16px;
+
+    font-weight: 700;
+
+    margin-bottom: 5px;
+}
+
+
+.import-description {
+    color: var(--muted);
+
+    font-size: 11px;
+}
+
+
+.uploads {
+    display: flex;
+
+    gap: 9px;
+
+    flex-wrap: wrap;
+}
+
+
+.upload {
+    cursor: pointer;
+
+    padding: 10px 15px;
+
+    border-radius: 10px;
+
+    background:
+        rgba(255,255,255,.045);
+
+    border:
+        1px solid rgba(255,255,255,.10);
+
+    color: white;
+
+    font-size: 11px;
+
+    font-weight: 700;
+
+    transition: .25s;
+}
+
+
+.upload:hover {
+    transform: translateY(-2px);
+
+    background:
+        rgba(139,92,246,.15);
+
+    border-color:
+        rgba(168,85,247,.40);
+
+    box-shadow:
+        0 8px 25px rgba(139,92,246,.15);
+}
+
+
+input[type="file"] {
+    display: none;
+}
+
+
+.file-status {
+    margin-top: 13px;
+
+    color: #6ee7b7;
+
+    font-size: 10px;
+}
+
+
+/* =========================================================
+   SECTION TITLE
+========================================================= */
+
+.section-title {
+    display: flex;
+
+    justify-content: space-between;
+
+    align-items: center;
+
+    margin-bottom: 15px;
+}
+
+
+.section-title h2 {
+    font-size: 15px;
+}
+
+
+.section-title span {
+    color: var(--muted);
+
+    font-size: 10px;
+}
+
+
+/* =========================================================
+   FILTERS
+========================================================= */
+
+.filters {
+    display: grid;
+
+    grid-template-columns:
+        repeat(5, 1fr);
+
+    gap: 11px;
+}
+
+
+.filter label {
+    display: block;
+
+    color: #9f99b6;
+
+    font-size: 9px;
+
+    text-transform: uppercase;
+
+    letter-spacing: .8px;
+
+    margin-bottom: 7px;
+}
+
+
+select,
+input[type="date"] {
+    width: 100%;
+
+    padding: 11px 12px;
+
+    border-radius: 10px;
+
+    outline: none;
+
+    color: white;
+
+    background:
+        rgba(255,255,255,.045);
+
+    border:
+        1px solid rgba(255,255,255,.10);
+}
+
+
+select option {
+    background: #18142b;
+}
+
+
+select:focus,
+input[type="date"]:focus {
+    border-color:
+        var(--purple);
+
+    box-shadow:
+        0 0 0 3px
+        rgba(139,92,246,.10);
+}
+
+
+.reset {
+    width: 100%;
+
+    height: 42px;
+
+    margin-top: 18px;
+
+    border: none;
+
+    border-radius: 10px;
+
+    color: white;
+
+    cursor: pointer;
+
+    font-weight: 800;
+
+    background:
+        linear-gradient(
+            135deg,
+            #7c3aed,
+            #db2777
+        );
+
+    transition: .25s;
+}
+
+
+.reset:hover {
+    transform: translateY(-2px);
+
+    box-shadow:
+        0 12px 30px
+        rgba(236,72,153,.22);
+}
+
+
+/* =========================================================
+   KPI CARDS
+========================================================= */
+
+.kpis {
+    display: grid;
+
+    grid-template-columns:
+        repeat(5,1fr);
+
+    gap: 14px;
+
+    margin-bottom: 20px;
+}
+
+
+.kpi {
+    position: relative;
+
+    overflow: hidden;
+
+    padding: 19px;
+
+    border-radius: 17px;
+
+    background:
+        linear-gradient(
+            145deg,
+            rgba(30,26,51,.90),
+            rgba(17,15,30,.91)
+        );
+
+    border:
+        1px solid var(--border);
+
+    transition: .3s;
+}
+
+
+.kpi:hover {
+    transform:
+        translateY(-5px);
+
+    border-color:
+        rgba(168,85,247,.35);
+
+    box-shadow:
+        0 18px 40px
+        rgba(0,0,0,.25);
+}
+
+
+.kpi::after {
+    content: "";
+
+    position: absolute;
+
+    width: 100px;
+    height: 100px;
+
+    right: -45px;
+    top: -45px;
+
+    border-radius: 50%;
+
+    background:
+        radial-gradient(
+            circle,
+            rgba(168,85,247,.16),
+            transparent 70%
+        );
+}
+
+
+.kpi-icon {
+    font-size: 20px;
+
+    margin-bottom: 11px;
+}
+
+
+.kpi-label {
+    color: #9f99b6;
+
+    font-size: 9px;
+
+    letter-spacing: .7px;
+
+    margin-bottom: 7px;
+}
+
+
+.kpi-value {
+    font-size: 20px;
+
+    font-weight: 800;
+
+    word-break: break-word;
+}
+
+
+.kpi-note {
+    color: #6f6984;
+
+    font-size: 9px;
+
+    margin-top: 5px;
+}
+
+
+/* =========================================================
+   CHART LAYOUT
+========================================================= */
+
+.chart-wide {
+    display: grid;
+
+    grid-template-columns:
+        2fr 1fr;
+
+    gap: 16px;
+
+    margin-bottom: 16px;
+}
+
+
+.chart-two {
+    display: grid;
+
+    grid-template-columns:
+        1fr 1fr;
+
+    gap: 16px;
+
+    margin-bottom: 16px;
+}
+
+
+.chart-card {
+    padding: 20px;
+
+    border-radius: 19px;
+
+    background:
+        linear-gradient(
+            145deg,
+            rgba(28,24,47,.86),
+            rgba(14,12,26,.90)
+        );
+
+    border:
+        1px solid var(--border);
+
+    box-shadow:
+        0 16px 50px rgba(0,0,0,.18);
+
+    transition: .3s;
+}
+
+
+.chart-card:hover {
+    border-color:
+        rgba(168,85,247,.25);
+
+    transform:
+        translateY(-2px);
+}
+
+
+.chart-header {
+    display: flex;
+
+    justify-content: space-between;
+
+    align-items: center;
+
+    margin-bottom: 13px;
+}
+
+
+.chart-header h2 {
+    font-size: 14px;
+}
+
+
+.chart-badge {
+    color: #aaa5bf;
+
+    font-size: 9px;
+
+    padding: 5px 9px;
+
+    border-radius: 20px;
+
+    background:
+        rgba(255,255,255,.045);
+}
+
+
+.chart-container {
+    height: 285px;
+
+    position: relative;
+}
+
+
+/* =========================================================
+   CLICK HIGHLIGHT
+========================================================= */
+
+.chart-help {
+    margin-top: 9px;
+
+    text-align: center;
+
+    color: #77718d;
+
+    font-size: 9px;
+}
+
+
+.selected-info {
+    margin-top: 10px;
+
+    padding: 9px 12px;
+
+    border-radius: 9px;
+
+    background:
+        rgba(139,92,246,.08);
+
+    border:
+        1px solid rgba(139,92,246,.18);
+
+    color: #c9bdf5;
+
+    font-size: 10px;
+
+    text-align: center;
+
+    opacity: 0;
+
+    transition: .3s;
+}
+
+
+.selected-info.show {
+    opacity: 1;
+}
+
+
+/* =========================================================
+   INSIGHTS
+========================================================= */
+
+.insights {
+    display: grid;
+
+    grid-template-columns:
+        repeat(3,1fr);
+
+    gap: 12px;
+}
+
+
+.insight {
+    padding: 18px;
+
+    border-radius: 15px;
+
+    background:
+        rgba(255,255,255,.035);
+
+    border:
+        1px solid rgba(255,255,255,.065);
+
+    transition: .25s;
+}
+
+
+.insight:hover {
+    transform:
+        translateY(-3px);
+
+    background:
+        rgba(139,92,246,.07);
+}
+
+
+.insight-icon {
+    font-size: 22px;
+
+    margin-bottom: 9px;
+}
+
+
+.insight h3 {
+    font-size: 13px;
+
+    margin-bottom: 6px;
+}
+
+
+.insight p {
+    color: var(--muted);
+
+    font-size: 11px;
+
+    line-height: 1.6;
+}
+
+
+/* =========================================================
+   TABLE
+========================================================= */
+
+.table-wrap {
+    overflow-x: auto;
+}
+
+
+table {
+    width: 100%;
+
+    min-width: 850px;
+
+    border-collapse: collapse;
+}
+
+
+th {
+    padding: 12px;
+
+    text-align: left;
+
+    color: #b9aaf1;
+
+    font-size: 9px;
+
+    letter-spacing: .6px;
+
+    background:
+        rgba(139,92,246,.07);
+}
+
+
+td {
+    padding: 12px;
+
+    border-bottom:
+        1px solid
+        rgba(255,255,255,.055);
+
+    color: #c9c5d8;
+
+    font-size: 10px;
+}
+
+
+tr:hover td {
+    background:
+        rgba(139,92,246,.045);
+}
+
+
+.badge {
+    padding: 4px 8px;
+
+    border-radius: 20px;
+
+    background:
+        rgba(168,85,247,.10);
+
+    color: #c4b5fd;
+}
+
+
+/* =========================================================
+   FOOTER
+========================================================= */
+
+footer {
+    text-align: center;
+
+    color: #656075;
+
+    font-size: 10px;
+
+    padding: 25px;
+}
+
+
+/* =========================================================
+   RESPONSIVE
+========================================================= */
+
+@media(max-width:1200px) {
+
+    .kpis {
+        grid-template-columns:
+            repeat(3,1fr);
+    }
+
+    .filters {
+        grid-template-columns:
+            repeat(3,1fr);
+    }
+
+}
+
+
+@media(max-width:900px) {
+
+    .chart-wide,
+    .chart-two {
+        grid-template-columns: 1fr;
+    }
+
+    .insights {
+        grid-template-columns: 1fr;
+    }
+
+}
+
+
+@media(max-width:600px) {
+
+    .kpis {
+        grid-template-columns:
+            repeat(2,1fr);
+    }
+
+    .filters {
+        grid-template-columns: 1fr;
+    }
+
+    .brand h1 {
+        font-size: 18px;
+    }
+
+    .brand p {
+        display: none;
+    }
+
+    .hero {
+        padding: 25px;
+    }
+
+    .hero h2 {
+        font-size: 22px;
+    }
+
+}
+
+
+@media(max-width:400px) {
+
+    .kpis {
+        grid-template-columns: 1fr;
+    }
+
+}
+
+</style>
+</head>
+
+
+<body>
+
+
+<!-- =========================================================
+     HEADER
+========================================================= -->
+
+<header class="header">
+
+<div class="header-inner">
+
+<div class="brand">
+
+<div class="logo">
+    🇮🇳
+</div>
+
+<div>
+
+<h1>
+    Bharat Sales Intelligence
+</h1>
+
+<p>
+    Sales • Revenue • Performance Analytics
+</p>
+
+</div>
+
+</div>
+
+
+<div class="live">
+
+<span class="live-dot"></span>
+
+LIVE ANALYTICS
+
+</div>
+
+</div>
+
+</header>
+
+
+
+<!-- =========================================================
+     MAIN CONTAINER
+========================================================= -->
+
+<div class="container">
+
+
+<!-- =========================================================
+     HERO
+========================================================= -->
+
+<section class="hero">
+
+<h2>
+    Turn Indian Sales Data Into Smarter Business Decisions.
+</h2>
+
+<p>
+
+Bharat Sales Intelligence is an interactive sales and
+revenue analytics dashboard designed to transform business
+data into meaningful insights. Analyze revenue trends,
+top-performing products, category performance, regional
+sales, transaction volumes and business growth using
+Indian Rupee (₹) values.
+
+</p>
+
+<span class="hero-tag">
+
+🇮🇳 Interactive Indian Business Intelligence Dashboard
+
+</span>
+
+</section>
+
+
+
+<!-- =========================================================
+     DATA IMPORT
+========================================================= -->
+
+<div class="panel">
+
+<div class="import-row">
+
+<div>
+
+<div class="import-title">
+    📂 Data Import Center
+</div>
+
+<div class="import-description">
+    Import business data from CSV, Excel or SQLite database.
+</div>
+
+</div>
+
+
+<div class="uploads">
+
+
+<label class="upload">
+
+📄 Import CSV
+
+<input
+    type="file"
+    id="csvFile"
+    accept=".csv">
+
+</label>
+
+
+<label class="upload">
+
+📊 Import Excel
+
+<input
+    type="file"
+    id="excelFile"
+    accept=".xlsx,.xls">
+
+</label>
+
+
+<label class="upload">
+
+🗄 Import Database
+
+<input
+    type="file"
+    id="dbFile"
+    accept=".db,.sqlite,.sqlite3">
+
+</label>
+
+
+</div>
+
+</div>
+
+
+<div
+class="file-status"
+id="fileStatus">
+
+✓ Demo Indian sales dataset loaded successfully
+
+</div>
+
+</div>
+
+
+
+<!-- =========================================================
+     FILTERS
+========================================================= -->
+
+<div class="panel">
+
+<div class="section-title">
+
+<h2>
+    🎛 Interactive Controls
+</h2>
+
+<span>
+    Click filters to update all analytics
+</span>
+
+</div>
+
+
+<div class="filters">
+
+
+<div class="filter">
+
+<label>
+    Category
+</label>
+
+<select id="categoryFilter">
+
+<option value="All">
+    All Categories
+</option>
+
+</select>
+
+</div>
+
+
+<div class="filter">
+
+<label>
+    Region
+</label>
+
+<select id="regionFilter">
+
+<option value="All">
+    All Regions
+</option>
+
+</select>
+
+</div>
+
+
+<div class="filter">
+
+<label>
+    Product
+</label>
+
+<select id="productFilter">
+
+<option value="All">
+    All Products
+</option>
+
+</select>
+
+</div>
+
+
+<div class="filter">
+
+<label>
+    Start Date
+</label>
+
+<input
+    type="date"
+    id="startDate">
+
+</div>
+
+
+<div class="filter">
+
+<label>
+    End Date
+</label>
+
+<input
+    type="date"
+    id="endDate">
+
+</div>
+
+
+<div class="filter">
+
+<button
+    class="reset"
+    id="resetBtn">
+
+↻ Reset Dashboard
+
+</button>
+
+</div>
+
+
+</div>
+
+</div>
+
+
+
+<!-- =========================================================
+     KPI CARDS
+========================================================= -->
+
+<div class="kpis">
+
+
+<div class="kpi">
+
+<div class="kpi-icon">
+    💎
+</div>
+
+<div class="kpi-label">
+    TOTAL SALES
+</div>
+
+<div
+    class="kpi-value"
+    id="totalSales">
+
+₹0
+
+</div>
+
+<div class="kpi-note">
+    Overall sales value
+</div>
+
+</div>
+
+
+
+<div class="kpi">
+
+<div class="kpi-icon">
+    💰
+</div>
+
+<div class="kpi-label">
+    TOTAL REVENUE
+</div>
+
+<div
+    class="kpi-value"
+    id="totalRevenue">
+
+₹0
+
+</div>
+
+<div class="kpi-note">
+    Revenue generated
+</div>
+
+</div>
+
+
+
+<div class="kpi">
+
+<div class="kpi-icon">
+    🛍️
+</div>
+
+<div class="kpi-label">
+    TOTAL ORDERS
+</div>
+
+<div
+    class="kpi-value"
+    id="totalOrders">
+
+0
+
+</div>
+
+<div class="kpi-note">
+    Transactions
+</div>
+
+</div>
+
+
+
+<div class="kpi">
+
+<div class="kpi-icon">
+    ✨
+</div>
+
+<div class="kpi-label">
+    AVERAGE ORDER VALUE
+</div>
+
+<div
+    class="kpi-value"
+    id="averageOrder">
+
+₹0
+
+</div>
+
+<div class="kpi-note">
+    Average revenue per order
+</div>
+
+</div>
+
+
+
+<div class="kpi">
+
+<div class="kpi-icon">
+    📦
+</div>
+
+<div class="kpi-label">
+    UNITS SOLD
+</div>
+
+<div
+    class="kpi-value"
+    id="totalQuantity">
+
+0
+
+</div>
+
+<div class="kpi-note">
+    Products sold
+</div>
+
+</div>
+
+</div>
+
+
+
+<!-- =========================================================
+     REVENUE TREND + CATEGORY
+========================================================= -->
+
+<div class="chart-wide">
+
+
+<div class="chart-card">
+
+<div class="chart-header">
+
+<h2>
+    📈 Revenue Journey
+</h2>
+
+<span class="chart-badge">
+    Revenue Trend
+</span>
+
+</div>
+
+<div class="chart-container">
+
+<canvas id="revenueChart"></canvas>
+
+</div>
+
+<div
+    id="revenueSelected"
+    class="selected-info">
+</div>
+
+<div class="chart-help">
+    🖱 Click a point to highlight the selected date
+</div>
+
+</div>
+
+
+
+<div class="chart-card">
+
+<div class="chart-header">
+
+<h2>
+    🍩 Category Performance
+</h2>
+
+<span class="chart-badge">
+    Sales Share
+</span>
+
+</div>
+
+<div class="chart-container">
+
+<canvas id="categoryChart"></canvas>
+
+</div>
+
+<div
+    id="categorySelected"
+    class="selected-info">
+</div>
+
+<div class="chart-help">
+    🖱 Click a segment to highlight it
+</div>
+
+</div>
+
+</div>
+
+
+
+<!-- =========================================================
+     PRODUCT + REGION
+========================================================= -->
+
+<div class="chart-two">
+
+
+<div class="chart-card">
+
+<div class="chart-header">
+
+<h2>
+    🏆 Top Performing Products
+</h2>
+
+<span class="chart-badge">
+    Top 5
+</span>
+
+</div>
+
+<div class="chart-container">
+
+<canvas id="productChart"></canvas>
+
+</div>
+
+<div
+    id="productSelected"
+    class="selected-info">
+</div>
+
+<div class="chart-help">
+    🖱 Click a product bar
+</div>
+
+</div>
+
+
+
+<div class="chart-card">
+
+<div class="chart-header">
+
+<h2>
+    🌍 Regional Sales
+</h2>
+
+<span class="chart-badge">
+    India
+</span>
+
+</div>
+
+<div class="chart-container">
+
+<canvas id="regionChart"></canvas>
+
+</div>
+
+<div
+    id="regionSelected"
+    class="selected-info">
+</div>
+
+<div class="chart-help">
+    🖱 Click a region
+</div>
+
+</div>
+
+</div>
+
+
+
+<!-- =========================================================
+     SALES VS REVENUE + QUANTITY
+========================================================= -->
+
+<div class="chart-two">
+
+
+<div class="chart-card">
+
+<div class="chart-header">
+
+<h2>
+    ⚖️ Sales vs Revenue
+</h2>
+
+<span class="chart-badge">
+    Comparison
+</span>
+
+</div>
+
+<div class="chart-container">
+
+<canvas id="comparisonChart"></canvas>
+
+</div>
+
+<div
+    id="comparisonSelected"
+    class="selected-info">
+</div>
+
+<div class="chart-help">
+    🖱 Click a date
+</div>
+
+</div>
+
+
+
+<div class="chart-card">
+
+<div class="chart-header">
+
+<h2>
+    📦 Product Quantity
+</h2>
+
+<span class="chart-badge">
+    Units Sold
+</span>
+
+</div>
+
+<div class="chart-container">
+
+<canvas id="quantityChart"></canvas>
+
+</div>
+
+<div
+    id="quantitySelected"
+    class="selected-info">
+</div>
+
+<div class="chart-help">
+    🖱 Click a product
+</div>
+
+</div>
+
+</div>
+
+
+
+<!-- =========================================================
+     REGIONAL REVENUE + MONTHLY SALES
+========================================================= -->
+
+<div class="chart-two">
+
+
+<div class="chart-card">
+
+<div class="chart-header">
+
+<h2>
+    💠 Revenue by Region
+</h2>
+
+<span class="chart-badge">
+    Distribution
+</span>
+
+</div>
+
+<div class="chart-container">
+
+<canvas id="regionRevenueChart"></canvas>
+
+</div>
+
+<div
+    id="regionRevenueSelected"
+    class="selected-info">
+</div>
+
+<div class="chart-help">
+    🖱 Click a region segment
+</div>
+
+</div>
+
+
+
+<div class="chart-card">
+
+<div class="chart-header">
+
+<h2>
+    📅 Monthly Sales
+</h2>
+
+<span class="chart-badge">
+    Growth
+</span>
+
+</div>
+
+<div class="chart-container">
+
+<canvas id="monthlyChart"></canvas>
+
+</div>
+
+<div
+    id="monthlySelected"
+    class="selected-info">
+</div>
+
+<div class="chart-help">
+    🖱 Click a month
+</div>
+
+</div>
+
+</div>
+
+
+
+<!-- =========================================================
+     BUSINESS INSIGHTS
+========================================================= -->
+
+<div class="panel">
+
+<div class="section-title">
+
+<h2>
+    🧠 Intelligent Business Insights
+</h2>
+
+<span>
+    Automatically generated
+</span>
+
+</div>
+
+
+<div class="insights">
+
+
+<div class="insight">
+
+<div class="insight-icon">
+    🏆
+</div>
+
+<h3>
+    Top Product
+</h3>
+
+<p id="bestProduct">
+    Analyzing...
+</p>
+
+</div>
+
+
+
+<div class="insight">
+
+<div class="insight-icon">
+    💜
+</div>
+
+<h3>
+    Leading Category
+</h3>
+
+<p id="bestCategory">
+    Analyzing...
+</p>
+
+</div>
+
+
+
+<div class="insight">
+
+<div class="insight-icon">
+    🌎
+</div>
+
+<h3>
+    Strongest Region
+</h3>
+
+<p id="bestRegion">
+    Analyzing...
+</p>
+
+</div>
+
+</div>
+
+</div>
+
+
+
+<!-- =========================================================
+     TRANSACTION TABLE
+========================================================= -->
+
+<div class="panel">
+
+<div class="section-title">
+
+<h2>
+    📋 Transaction Intelligence
+</h2>
+
+<span id="recordCount">
+    0 records
+</span>
+
+</div>
+
+
+<div class="table-wrap">
+
+<table>
+
+<thead>
+
+<tr>
+
+<th>DATE</th>
+
+<th>PRODUCT</th>
+
+<th>CATEGORY</th>
+
+<th>REGION</th>
+
+<th>QUANTITY</th>
+
+<th>SALES</th>
+
+<th>REVENUE</th>
+
+</tr>
+
+</thead>
+
+
+<tbody id="salesTable">
+</tbody>
+
+</table>
+
+</div>
+
+</div>
+
+
+</div>
+
+
+
+<!-- =========================================================
+     FOOTER
+========================================================= -->
+
+<footer>
+
+🇮🇳 Bharat Sales Intelligence — Sales & Revenue Intelligence Dashboard
+
+<br><br>
+
+Data Visualization • KPI Tracking • Business Intelligence
+
+<br><br>
+
+Built for Academic & Internship Project Demonstration
+
+</footer>
+
+
+
+<script>
+
+/* =========================================================
+   SAMPLE INDIAN SALES DATA
+========================================================= */
+
+let salesData = [
+
+{
+    date:"2026-01-05",
+    product:"Laptop",
+    category:"Electronics",
+    region:"North",
+    quantity:3,
+    sales:150000,
+    revenue:165000
+},
+
+{
+    date:"2026-01-10",
+    product:"Mobile",
+    category:"Electronics",
+    region:"South",
+    quantity:8,
+    sales:120000,
+    revenue:135000
+},
+
+{
+    date:"2026-01-15",
+    product:"Headphones",
+    category:"Accessories",
+    region:"East",
+    quantity:15,
+    sales:30000,
+    revenue:36000
+},
+
+{
+    date:"2026-01-20",
+    product:"Tablet",
+    category:"Electronics",
+    region:"West",
+    quantity:5,
+    sales:75000,
+    revenue:85000
+},
+
+{
+    date:"2026-02-03",
+    product:"Laptop",
+    category:"Electronics",
+    region:"South",
+    quantity:4,
+    sales:200000,
+    revenue:220000
+},
+
+{
+    date:"2026-02-08",
+    product:"Keyboard",
+    category:"Accessories",
+    region:"North",
+    quantity:20,
+    sales:30000,
+    revenue:35000
+},
+
+{
+    date:"2026-02-14",
+    product:"Mobile",
+    category:"Electronics",
+    region:"East",
+    quantity:10,
+    sales:150000,
+    revenue:165000
+},
+
+{
+    date:"2026-02-22",
+    product:"Mouse",
+    category:"Accessories",
+    region:"West",
+    quantity:25,
+    sales:25000,
+    revenue:30000
+},
+
+{
+    date:"2026-03-05",
+    product:"Laptop",
+    category:"Electronics",
+    region:"West",
+    quantity:2,
+    sales:100000,
+    revenue:115000
+},
+
+{
+    date:"2026-03-12",
+    product:"Tablet",
+    category:"Electronics",
+    region:"North",
+    quantity:6,
+    sales:90000,
+    revenue:102000
+},
+
+{
+    date:"2026-03-18",
+    product:"Headphones",
+    category:"Accessories",
+    region:"South",
+    quantity:20,
+    sales:40000,
+    revenue:48000
+},
+
+{
+    date:"2026-03-25",
+    product:"Keyboard",
+    category:"Accessories",
+    region:"East",
+    quantity:30,
+    sales:45000,
+    revenue:52000
+},
+
+{
+    date:"2026-04-04",
+    product:"Laptop",
+    category:"Electronics",
+    region:"North",
+    quantity:5,
+    sales:250000,
+    revenue:280000
+},
+
+{
+    date:"2026-04-12",
+    product:"Mobile",
+    category:"Electronics",
+    region:"West",
+    quantity:12,
+    sales:180000,
+    revenue:205000
+},
+
+{
+    date:"2026-04-18",
+    product:"Mouse",
+    category:"Accessories",
+    region:"South",
+    quantity:35,
+    sales:35000,
+    revenue:42000
+},
+
+{
+    date:"2026-05-03",
+    product:"Tablet",
+    category:"Electronics",
+    region:"East",
+    quantity:9,
+    sales:135000,
+    revenue:155000
+},
+
+{
+    date:"2026-05-10",
+    product:"Headphones",
+    category:"Accessories",
+    region:"North",
+    quantity:25,
+    sales:50000,
+    revenue:60000
+},
+
+{
+    date:"2026-05-21",
+    product:"Laptop",
+    category:"Electronics",
+    region:"South",
+    quantity:3,
+    sales:150000,
+    revenue:170000
+},
+
+{
+    date:"2026-06-05",
+    product:"Keyboard",
+    category:"Accessories",
+    region:"West",
+    quantity:40,
+    sales:60000,
+    revenue:72000
+},
+
+{
+    date:"2026-06-15",
+    product:"Mobile",
+    category:"Electronics",
+    region:"North",
+    quantity:15,
+    sales:225000,
+    revenue:255000
+}
+
+];
+
+
+/* =========================================================
+   CHART STORAGE
+========================================================= */
+
+let charts = {};
+
+
+/* =========================================================
+   INDIAN CURRENCY
+========================================================= */
+
+function currency(value) {
+
+    return new Intl.NumberFormat(
+        "en-IN",
+        {
+            style: "currency",
+            currency: "INR",
+            maximumFractionDigits: 0
+        }
+    ).format(
+        Number(value) || 0
+    );
+
+}
+
+
+/* =========================================================
+   NUMBER CONVERTER
+========================================================= */
+
+function num(value) {
+
+    return Number(
+
+        String(value ?? 0)
+
+        .replace(/₹/g, "")
+
+        .replace(/,/g, "")
+
+    ) || 0;
+
+}
+
+
+/* =========================================================
+   UPDATE FILTER OPTIONS
+========================================================= */
+
+function updateFilters() {
+
+    const category =
+        document.getElementById(
+            "categoryFilter"
+        );
+
+    const region =
+        document.getElementById(
+            "regionFilter"
+        );
+
+    const product =
+        document.getElementById(
+            "productFilter"
+        );
+
+
+    const categories =
+        [...new Set(
+            salesData.map(
+                x => x.category
+            )
+        )].sort();
+
+
+    const regions =
+        [...new Set(
+            salesData.map(
+                x => x.region
+            )
+        )].sort();
+
+
+    const products =
+        [...new Set(
+            salesData.map(
+                x => x.product
+            )
+        )].sort();
+
+
+    category.innerHTML =
+        `<option value="All">
+            All Categories
+        </option>`;
+
+
+    region.innerHTML =
+        `<option value="All">
+            All Regions
+        </option>`;
+
+
+    product.innerHTML =
+        `<option value="All">
+            All Products
+        </option>`;
+
+
+    categories.forEach(x => {
+
+        category.innerHTML +=
+            `<option value="${x}">
+                ${x}
+            </option>`;
+
+    });
+
+
+    regions.forEach(x => {
+
+        region.innerHTML +=
+            `<option value="${x}">
+                ${x}
+            </option>`;
+
+    });
+
+
+    products.forEach(x => {
+
+        product.innerHTML +=
+            `<option value="${x}">
+                ${x}
+            </option>`;
+
+    });
+
+}
+
+
+/* =========================================================
+   FILTER DATA
+========================================================= */
+
+function filteredData() {
+
+    const category =
+        document.getElementById(
+            "categoryFilter"
+        ).value;
+
+
+    const region =
+        document.getElementById(
+            "regionFilter"
+        ).value;
+
+
+    const product =
+        document.getElementById(
+            "productFilter"
+        ).value;
+
+
+    const start =
+        document.getElementById(
+            "startDate"
+        ).value;
+
+
+    const end =
+        document.getElementById(
+            "endDate"
+        ).value;
+
+
+    return salesData.filter(item => {
+
+        return (
+
+            (
+                category === "All" ||
+                item.category === category
+            )
+
+            &&
+
+            (
+                region === "All" ||
+                item.region === region
+            )
+
+            &&
+
+            (
+                product === "All" ||
+                item.product === product
+            )
+
+            &&
+
+            (
+                !start ||
+                item.date >= start
+            )
+
+            &&
+
+            (
+                !end ||
+                item.date <= end
+            )
+
+        );
+
+    });
+
+}
+
+
+/* =========================================================
+   KPI UPDATE
+========================================================= */
+
+function updateKPI(data) {
+
+    const sales =
+        data.reduce(
+            (a,x) =>
+                a + num(x.sales),
+            0
+        );
+
+
+    const revenue =
+        data.reduce(
+            (a,x) =>
+                a + num(x.revenue),
+            0
+        );
+
+
+    const orders =
+        data.length;
+
+
+    const quantity =
+        data.reduce(
+            (a,x) =>
+                a + num(x.quantity),
+            0
+        );
+
+
+    document.getElementById(
+        "totalSales"
+    ).textContent =
+        currency(sales);
+
+
+    document.getElementById(
+        "totalRevenue"
+    ).textContent =
+        currency(revenue);
+
+
+    document.getElementById(
+        "totalOrders"
+    ).textContent =
+        orders.toLocaleString(
+            "en-IN"
+        );
+
+
+    document.getElementById(
+        "averageOrder"
+    ).textContent =
+        currency(
+            orders
+                ? Math.round(
+                    revenue / orders
+                )
+                : 0
+        );
+
+
+    document.getElementById(
+        "totalQuantity"
+    ).textContent =
+        quantity.toLocaleString(
+            "en-IN"
+        );
+
+}
+
+
+/* =========================================================
+   GROUP DATA
+========================================================= */
+
+function group(
+    data,
+    field,
+    value
+) {
+
+    const result = {};
+
+
+    data.forEach(item => {
+
+        const key =
+            item[field] ||
+            "Unknown";
+
+
+        result[key] =
+            (
+                result[key] || 0
+            ) +
+            num(item[value]);
+
+    });
+
+
+    return result;
+
+}
+
+
+/* =========================================================
+   CHART COLORS
+========================================================= */
+
+const colors = [
+
+    "#8b5cf6",
+    "#ec4899",
+    "#22d3ee",
+    "#34d399",
+    "#fbbf24",
+    "#fb7185",
+    "#60a5fa",
+    "#c084fc"
+
+];
+
+
+/* =========================================================
+   CHART OPTIONS
+========================================================= */
+
+function chartOptions() {
+
+    return {
+
+        responsive: true,
+
+        maintainAspectRatio: false,
+
+        interaction: {
+
+            mode: "index",
+
+            intersect: false
+
+        },
+
+        animation: {
+
+            duration: 850,
+
+            easing: "easeOutQuart"
+
+        },
+
+        plugins: {
+
+            legend: {
+
+                labels: {
+
+                    color: "#c9c5d8",
+
+                    font: {
+                        size: 10
+                    }
+
+                }
+
+            },
+
+            tooltip: {
+
+                backgroundColor:
+                    "#171329",
+
+                titleColor:
+                    "#ffffff",
+
+                bodyColor:
+                    "#d8d4e7",
+
+                borderColor:
+                    "rgba(168,85,247,.4)",
+
+                borderWidth: 1,
+
+                padding: 12
+
+            }
+
+        },
+
+        scales: {
+
+            x: {
+
+                ticks: {
+
+                    color:
+                        "#817b96",
+
+                    font: {
+                        size: 9
+                    }
+
+                },
+
+                grid: {
+
+                    color:
+                        "rgba(255,255,255,.045)"
+
+                }
+
+            },
+
+            y: {
+
+                ticks: {
+
+                    color:
+                        "#817b96",
+
+                    font: {
+                        size: 9
+                    },
+
+                    callback:
+                        function(value) {
+
+                            return currency(
+                                value
+                            );
+
+                        }
+
+                },
+
+                grid: {
+
+                    color:
+                        "rgba(255,255,255,.045)"
+
+                }
+
+            }
+
+        }
+
+    };
+
+}
+
+
+/* =========================================================
+   FADE COLOR
+========================================================= */
+
+function fadedColor(color) {
+
+    if (
+        typeof color !== "string"
+    ) {
+
+        return "rgba(255,255,255,.12)";
+
+    }
+
+
+    if (
+        color.startsWith("#")
+    ) {
+
+        return color + "45";
+
+    }
+
+
+    return "rgba(255,255,255,.12)";
+
+}
+
+
+/* =========================================================
+   HIGHLIGHT SELECTED GRAPH ITEM
+========================================================= */
+
+function highlightChart(
+    chart,
+    index,
+    infoId,
+    message
+) {
+
+    chart.data.datasets.forEach(
+        dataset => {
+
+            if (
+                Array.isArray(
+                    dataset.backgroundColor
+                )
+            ) {
+
+                dataset.backgroundColor =
+                    dataset.backgroundColor.map(
+                        (color,i) => {
+
+                            return i === index
+                                ? color
+                                : fadedColor(
+                                    color
+                                );
+
+                        }
+                    );
+
+            }
+
+            else {
+
+                const original =
+                    dataset.backgroundColor ||
+                    "#8b5cf6";
+
+
+                dataset.backgroundColor =
+                    dataset.data.map(
+                        (_,i) => {
+
+                            return i === index
+                                ? original
+                                : "rgba(255,255,255,.10)";
+
+                        }
+                    );
+
+            }
+
+        }
+    );
+
+
+    chart.update();
+
+
+    const info =
+        document.getElementById(
+            infoId
+        );
+
+
+    info.textContent =
+        message;
+
+
+    info.classList.add(
+        "show"
+    );
+
+}
+
+
+/* =========================================================
+   REVENUE TREND CHART
+========================================================= */
+
+function revenueChart(data) {
+
+    const grouped = {};
+
+
+    data.forEach(x => {
+
+        grouped[x.date] =
+            (
+                grouped[x.date] ||
+                0
+            ) +
+            num(x.revenue);
+
+    });
+
+
+    const labels =
+        Object.keys(grouped)
+        .sort();
+
+
+    if (charts.revenue) {
+        charts.revenue.destroy();
+    }
+
+
+    charts.revenue = new Chart(
+
+        document.getElementById(
+            "revenueChart"
+        ),
+
+        {
+
+            type: "line",
+
+            data: {
+
+                labels,
+
+                datasets: [{
+
+                    label: "Revenue",
+
+                    data:
+                        labels.map(
+                            x => grouped[x]
+                        ),
+
+                    borderColor:
+                        "#c084fc",
+
+                    backgroundColor:
+                        "rgba(192,132,252,.10)",
+
+                    borderWidth: 3,
+
+                    pointRadius: 5,
+
+                    pointHoverRadius: 9,
+
+                    pointBackgroundColor:
+                        "#ec4899",
+
+                    pointBorderColor:
+                        "#ffffff",
+
+                    pointBorderWidth: 1,
+
+                    fill: true,
+
+                    tension: .38
+
+                }]
+
+            },
+
+            options: {
+
+                ...chartOptions(),
+
+                onClick:
+                    function(event) {
+
+                        const points =
+                            this.getElementsAtEventForMode(
+                                event,
+                                "nearest",
+                                {
+                                    intersect:true
+                                },
+                                true
+                            );
+
+
+                        if (
+                            !points.length
+                        )
+                            return;
+
+
+                        const index =
+                            points[0].index;
+
+
+                        highlightChart(
+
+                            this,
+
+                            index,
+
+                            "revenueSelected",
+
+                            `${labels[index]} • Revenue ${currency(grouped[labels[index]])}`
+
+                        );
+
+                    }
+
+            }
+
+        }
+
+    );
+
+}
+
+
+/* =========================================================
+   CATEGORY CHART
+========================================================= */
+
+function categoryChart(data) {
+
+    const grouped =
+        group(
+            data,
+            "category",
+            "sales"
+        );
+
+
+    const labels =
+        Object.keys(grouped);
+
+
+    if (charts.category) {
+        charts.category.destroy();
+    }
+
+
+    charts.category = new Chart(
+
+        document.getElementById(
+            "categoryChart"
+        ),
+
+        {
+
+            type: "doughnut",
+
+            data: {
+
+                labels,
+
+                datasets: [{
+
+                    data:
+                        labels.map(
+                            x => grouped[x]
+                        ),
+
+                    backgroundColor:
+                        colors.slice(
+                            0,
+                            labels.length
+                        ),
+
+                    borderWidth: 2,
+
+                    borderColor:
+                        "#151126",
+
+                    hoverOffset: 12
+
+                }]
+
+            },
+
+            options: {
+
+                responsive: true,
+
+                maintainAspectRatio: false,
+
+                cutout: "68%",
+
+                plugins: {
+
+                    legend: {
+
+                        position: "bottom",
+
+                        labels: {
+
+                            color:
+                                "#c9c5d8",
+
+                            padding: 12,
+
+                            font: {
+                                size: 9
+                            }
+
+                        }
+
+                    }
+
+                },
+
+                onClick:
+                    function(event) {
+
+                        const points =
+                            this.getElementsAtEventForMode(
+                                event,
+                                "nearest",
+                                {
+                                    intersect:true
+                                },
+                                true
+                            );
+
+
+                        if (
+                            !points.length
+                        )
+                            return;
+
+
+                        const index =
+                            points[0].index;
+
+
+                        highlightChart(
+
+                            this,
+
+                            index,
+
+                            "categorySelected",
+
+                            `${labels[index]} • Sales ${currency(grouped[labels[index]])}`
+
+                        );
+
+                    }
+
+            }
+
+        }
+
+    );
+
+}
+
+
+/* =========================================================
+   PRODUCT CHART
+========================================================= */
+
+function productChart(data) {
+
+    const grouped =
+        group(
+            data,
+            "product",
+            "sales"
+        );
+
+
+    const sorted =
+        Object.entries(grouped)
+
+        .sort(
+            (a,b) => b[1] - a[1]
+        )
+
+        .slice(
+            0,
+            5
+        );
+
+
+    const labels =
+        sorted.map(
+            x => x[0]
+        );
+
+
+    if (charts.product) {
+        charts.product.destroy();
+    }
+
+
+    charts.product = new Chart(
+
+        document.getElementById(
+            "productChart"
+        ),
+
+        {
+
+            type: "bar",
+
+            data: {
+
+                labels,
+
+                datasets: [{
+
+                    label: "Sales",
+
+                    data:
+                        sorted.map(
+                            x => x[1]
+                        ),
+
+                    backgroundColor:
+                        "#8b5cf6",
+
+                    borderRadius: 8,
+
+                    borderSkipped: false
+
+                }]
+
+            },
+
+            options: {
+
+                ...chartOptions(),
+
+                indexAxis: "y",
+
+                onClick:
+                    function(event) {
+
+                        const points =
+                            this.getElementsAtEventForMode(
+                                event,
+                                "nearest",
+                                {
+                                    intersect:true
+                                },
+                                true
+                            );
+
+
+                        if (
+                            !points.length
+                        )
+                            return;
+
+
+                        const index =
+                            points[0].index;
+
+
+                        highlightChart(
+
+                            this,
+
+                            index,
+
+                            "productSelected",
+
+                            `${labels[index]} • Sales ${currency(sorted[index][1])}`
+
+                        );
+
+                    }
+
+            }
+
+        }
+
+    );
+
+}
+
+
+/* =========================================================
+   REGION SALES CHART
+========================================================= */
+
+function regionChart(data) {
+
+    const grouped =
+        group(
+            data,
+            "region",
+            "sales"
+        );
+
+
+    const labels =
+        Object.keys(grouped);
+
+
+    if (charts.region) {
+        charts.region.destroy();
+    }
+
+
+    charts.region = new Chart(
+
+        document.getElementById(
+            "regionChart"
+        ),
+
+        {
+
+            type: "bar",
+
+            data: {
+
+                labels,
+
+                datasets: [{
+
+                    label: "Sales",
+
+                    data:
+                        labels.map(
+                            x => grouped[x]
+                        ),
+
+                    backgroundColor:
+                        "#ec4899",
+
+                    borderRadius: 8
+
+                }]
+
+            },
+
+            options: {
+
+                ...chartOptions(),
+
+                onClick:
+                    function(event) {
+
+                        const points =
+                            this.getElementsAtEventForMode(
+                                event,
+                                "nearest",
+                                {
+                                    intersect:true
+                                },
+                                true
+                            );
+
+
+                        if (
+                            !points.length
+                        )
+                            return;
+
+
+                        const index =
+                            points[0].index;
+
+
+                        highlightChart(
+
+                            this,
+
+                            index,
+
+                            "regionSelected",
+
+                            `${labels[index]} Region • Sales ${currency(grouped[labels[index]])}`
+
+                        );
+
+                    }
+
+            }
+
+        }
+
+    );
+
+}
+
+
+/* =========================================================
+   SALES VS REVENUE
+========================================================= */
+
+function comparisonChart(data) {
+
+    const sales = {};
+
+    const revenue = {};
+
+
+    data.forEach(x => {
+
+        sales[x.date] =
+            (
+                sales[x.date] ||
+                0
+            ) +
+            num(x.sales);
+
+
+        revenue[x.date] =
+            (
+                revenue[x.date] ||
+                0
+            ) +
+            num(x.revenue);
+
+    });
+
+
+    const labels =
+        Object.keys(sales)
+        .sort();
+
+
+    if (charts.comparison) {
+        charts.comparison.destroy();
+    }
+
+
+    charts.comparison =
+        new Chart(
+
+            document.getElementById(
+                "comparisonChart"
+            ),
+
+            {
+
+                type: "bar",
+
+                data: {
+
+                    labels,
+
+                    datasets: [
+
+                        {
+
+                            label: "Sales",
+
+                            data:
+                                labels.map(
+                                    x => sales[x]
+                                ),
+
+                            backgroundColor:
+                                "#8b5cf6",
+
+                            borderRadius: 6
+
+                        },
+
+                        {
+
+                            label: "Revenue",
+
+                            data:
+                                labels.map(
+                                    x => revenue[x]
+                                ),
+
+                            backgroundColor:
+                                "#22d3ee",
+
+                            borderRadius: 6
+
+                        }
+
+                    ]
+
+                },
+
+                options: {
+
+                    ...chartOptions(),
+
+                    onClick:
+                        function(event) {
+
+                            const points =
+                                this.getElementsAtEventForMode(
+                                    event,
+                                    "nearest",
+                                    {
+                                        intersect:true
+                                    },
+                                    true
+                                );
+
+
+                            if (
+                                !points.length
+                            )
+                                return;
+
+
+                            const index =
+                                points[0].index;
+
+
+                            highlightChart(
+
+                                this,
+
+                                index,
+
+                                "comparisonSelected",
+
+                                `${labels[index]} • Sales ${currency(sales[labels[index]])} • Revenue ${currency(revenue[labels[index]])}`
+
+                            );
+
+                        }
+
+                }
+
+            }
+
+        );
+
+}
+
+
+/* =========================================================
+   QUANTITY CHART
+========================================================= */
+
+function quantityChart(data) {
+
+    const grouped =
+        group(
+            data,
+            "product",
+            "quantity"
+        );
+
+
+    const sorted =
+        Object.entries(grouped)
+        .sort(
+            (a,b) => b[1] - a[1]
+        );
+
+
+    const labels =
+        sorted.map(
+            x => x[0]
+        );
+
+
+    if (charts.quantity) {
+        charts.quantity.destroy();
+    }
+
+
+    charts.quantity =
+        new Chart(
+
+            document.getElementById(
+                "quantityChart"
+            ),
+
+            {
+
+                type: "bar",
+
+                data: {
+
+                    labels,
+
+                    datasets: [{
+
+                        label: "Units Sold",
+
+                        data:
+                            sorted.map(
+                                x => x[1]
+                            ),
+
+                        backgroundColor:
+                            "#34d399",
+
+                        borderRadius: 8
+
+                    }]
+
+                },
+
+                options: {
+
+                    ...chartOptions(),
+
+                    indexAxis: "y",
+
+                    scales: {
+
+                        x: {
+
+                            ticks: {
+
+                                color:
+                                    "#817b96",
+
+                                font: {
+                                    size: 9
+                                }
+
+                            },
+
+                            grid: {
+
+                                color:
+                                    "rgba(255,255,255,.045)"
+
+                            }
+
+                        },
+
+                        y: {
+
+                            ticks: {
+
+                                color:
+                                    "#817b96",
+
+                                font: {
+                                    size: 9
+                                }
+
+                            },
+
+                            grid: {
+
+                                color:
+                                    "rgba(255,255,255,.045)"
+
+                            }
+
+                        }
+
+                    },
+
+                    onClick:
+                        function(event) {
+
+                            const points =
+                                this.getElementsAtEventForMode(
+                                    event,
+                                    "nearest",
+                                    {
+                                        intersect:true
+                                    },
+                                    true
+                                );
+
+
+                            if (
+                                !points.length
+                            )
+                                return;
+
+
+                            const index =
+                                points[0].index;
+
+
+                            highlightChart(
+
+                                this,
+
+                                index,
+
+                                "quantitySelected",
+
+                                `${labels[index]} • ${sorted[index][1]} units sold`
+
+                            );
+
+                        }
+
+                }
+
+            }
+
+        );
+
+}
+
+
+/* =========================================================
+   REGIONAL REVENUE
+========================================================= */
+
+function regionRevenueChart(data) {
+
+    const grouped =
+        group(
+            data,
+            "region",
+            "revenue"
+        );
+
+
+    const labels =
+        Object.keys(grouped);
+
+
+    if (charts.regionRevenue) {
+        charts.regionRevenue.destroy();
+    }
+
+
+    charts.regionRevenue =
+        new Chart(
+
+            document.getElementById(
+                "regionRevenueChart"
+            ),
+
+            {
+
+                type: "doughnut",
+
+                data: {
+
+                    labels,
+
+                    datasets: [{
+
+                        data:
+                            labels.map(
+                                x => grouped[x]
+                            ),
+
+                        backgroundColor:
+                            colors.slice(
+                                0,
+                                labels.length
+                            ),
+
+                        borderWidth: 2,
+
+                        borderColor:
+                            "#151126",
+
+                        hoverOffset: 12
+
+                    }]
+
+                },
+
+                options: {
+
+                    responsive: true,
+
+                    maintainAspectRatio: false,
+
+                    cutout: "65%",
+
+                    plugins: {
+
+                        legend: {
+
+                            position: "bottom",
+
+                            labels: {
+
+                                color:
+                                    "#c9c5d8",
+
+                                padding: 12,
+
+                                font: {
+                                    size: 9
+                                }
+
+                            }
+
+                        }
+
+                    },
+
+                    onClick:
+                        function(event) {
+
+                            const points =
+                                this.getElementsAtEventForMode(
+                                    event,
+                                    "nearest",
+                                    {
+                                        intersect:true
+                                    },
+                                    true
+                                );
+
+
+                            if (
+                                !points.length
+                            )
+                                return;
+
+
+                            const index =
+                                points[0].index;
+
+
+                            highlightChart(
+
+                                this,
+
+                                index,
+
+                                "regionRevenueSelected",
+
+                                `${labels[index]} • Revenue ${currency(grouped[labels[index]])}`
+
+                            );
+
+                        }
+
+                }
+
+            }
+
+        );
+
+}
+
+
+/* =========================================================
+   MONTHLY SALES
+========================================================= */
+
+function monthlyChart(data) {
+
+    const grouped = {};
+
+
+    data.forEach(x => {
+
+        const month =
+            x.date.substring(
+                0,
+                7
+            );
+
+
+        grouped[month] =
+            (
+                grouped[month] ||
+                0
+            ) +
+            num(x.sales);
+
+    });
+
+
+    const labels =
+        Object.keys(grouped)
+        .sort();
+
+
+    if (charts.monthly) {
+        charts.monthly.destroy();
+    }
+
+
+    charts.monthly =
+        new Chart(
+
+            document.getElementById(
+                "monthlyChart"
+            ),
+
+            {
+
+                type: "line",
+
+                data: {
+
+                    labels,
+
+                    datasets: [{
+
+                        label: "Monthly Sales",
+
+                        data:
+                            labels.map(
+                                x => grouped[x]
+                            ),
+
+                        borderColor:
+                            "#fb7185",
+
+                        backgroundColor:
+                            "rgba(251,113,133,.09)",
+
+                        borderWidth: 3,
+
+                        pointRadius: 6,
+
+                        pointHoverRadius: 10,
+
+                        pointBackgroundColor:
+                            "#fbbf24",
+
+                        fill: true,
+
+                        tension: .4
+
+                    }]
+
+                },
+
+                options: {
+
+                    ...chartOptions(),
+
+                    onClick:
+                        function(event) {
+
+                            const points =
+                                this.getElementsAtEventForMode(
+                                    event,
+                                    "nearest",
+                                    {
+                                        intersect:true
+                                    },
+                                    true
+                                );
+
+
+                            if (
+                                !points.length
+                            )
+                                return;
+
+
+                            const index =
+                                points[0].index;
+
+
+                            highlightChart(
+
+                                this,
+
+                                index,
+
+                                "monthlySelected",
+
+                                `${labels[index]} • Sales ${currency(grouped[labels[index]])}`
+
+                            );
+
+                        }
+
+                }
+
+            }
+
+        );
+
+}
+
+
+/* =========================================================
+   TRANSACTION TABLE
+========================================================= */
+
+function table(data) {
+
+    const body =
+        document.getElementById(
+            "salesTable"
+        );
+
+
+    body.innerHTML = "";
+
+
+    data.forEach(item => {
+
+        const row =
+            document.createElement(
+                "tr"
+            );
+
+
+        row.innerHTML = `
+
+            <td>
+                ${item.date}
+            </td>
+
+            <td>
+                <strong>
+                    ${item.product}
+                </strong>
+            </td>
+
+            <td>
+
+                <span class="badge">
+                    ${item.category}
+                </span>
+
+            </td>
+
+            <td>
+                ${item.region}
+            </td>
+
+            <td>
+                ${num(item.quantity)}
+            </td>
+
+            <td>
+                ${currency(item.sales)}
+            </td>
+
+            <td>
+                ${currency(item.revenue)}
+            </td>
+
+        `;
+
+
+        body.appendChild(row);
+
+    });
+
+
+    document.getElementById(
+        "recordCount"
+    ).textContent =
+        `${data.length} records`;
+
+}
+
+
+/* =========================================================
+   BUSINESS INSIGHTS
+========================================================= */
+
+function insights(data) {
+
+    if (!data.length) {
+
+        document.getElementById(
+            "bestProduct"
+        ).textContent =
+            "No data available.";
+
+
+        document.getElementById(
+            "bestCategory"
+        ).textContent =
+            "No data available.";
+
+
+        document.getElementById(
+            "bestRegion"
+        ).textContent =
+            "No data available.";
+
+        return;
+
+    }
+
+
+    function best(
+        field,
+        value
+    ) {
+
+        const grouped =
+            group(
+                data,
+                field,
+                value
+            );
+
+
+        return Object.entries(
+            grouped
+        )
+        .sort(
+            (a,b) => b[1] - a[1]
+        )[0];
+
+    }
+
+
+    const product =
+        best(
+            "product",
+            "sales"
+        );
+
+
+    const category =
+        best(
+            "category",
+            "sales"
+        );
+
+
+    const region =
+        best(
+            "region",
+            "revenue"
+        );
+
+
+    document.getElementById(
+        "bestProduct"
+    ).textContent =
+
+        `${product[0]} leads product performance with ${currency(product[1])} in sales. Consider maintaining inventory and promotional focus on this product.`;
+
+
+    document.getElementById(
+        "bestCategory"
+    ).textContent =
+
+        `${category[0]} is the strongest category, contributing ${currency(category[1])} in sales across the selected dataset.`;
+
+
+    document.getElementById(
+        "bestRegion"
+    ).textContent =
+
+        `${region[0]} currently generates the highest regional revenue at ${currency(region[1])}.`;
+
+}
+
+
+/* =========================================================
+   UPDATE EVERYTHING
+========================================================= */
+
+function dashboard() {
+
+    const data =
+        filteredData();
+
+
+    updateKPI(data);
+
+    table(data);
+
+    revenueChart(data);
+
+    categoryChart(data);
+
+    productChart(data);
+
+    regionChart(data);
+
+    comparisonChart(data);
+
+    quantityChart(data);
+
+    regionRevenueChart(data);
+
+    monthlyChart(data);
+
+    insights(data);
+
+}
+
+
+/* =========================================================
+   FILTER EVENTS
+========================================================= */
+
+[
+
+    "categoryFilter",
+    "regionFilter",
+    "productFilter",
+    "startDate",
+    "endDate"
+
+].forEach(id => {
+
+    document
+        .getElementById(id)
+        .addEventListener(
+            "change",
+            dashboard
+        );
+
+});
+
+
+/* =========================================================
+   RESET DASHBOARD
+========================================================= */
+
+document
+    .getElementById(
+        "resetBtn"
+    )
+    .addEventListener(
+        "click",
+        function() {
+
+            document.getElementById(
+                "categoryFilter"
+            ).value = "All";
+
+
+            document.getElementById(
+                "regionFilter"
+            ).value = "All";
+
+
+            document.getElementById(
+                "productFilter"
+            ).value = "All";
+
+
+            document.getElementById(
+                "startDate"
+            ).value = "";
+
+
+            document.getElementById(
+                "endDate"
+            ).value = "";
+
+
+            dashboard();
+
+        }
+    );
+
+
+/* =========================================================
+   NORMALIZE IMPORTED DATA
+========================================================= */
+
+function normalize(rows) {
+
+    return rows.map(row => {
+
+        function find(names) {
+
+            for (
+                const name of names
+            ) {
+
+                if (
+                    row[name] !== undefined
+                ) {
+
+                    return row[name];
+
+                }
+
+            }
+
+            return "";
+
+        }
+
+
+        return {
+
+            date: String(
+                find([
+                    "Date",
+                    "date",
+                    "DATE"
+                ])
+            ).substring(
+                0,
+                10
+            ),
+
+
+            product: String(
+                find([
+                    "Product",
+                    "product",
+                    "PRODUCT"
+                ])
+            ),
+
+
+            category: String(
+                find([
+                    "Category",
+                    "category",
+                    "CATEGORY"
+                ])
+            ),
+
+
+            region: String(
+                find([
+                    "Region",
+                    "region",
+                    "REGION"
+                ])
+            ),
+
+
+            quantity: num(
+                find([
+                    "Quantity",
+                    "quantity",
+                    "QUANTITY"
+                ])
+            ),
+
+
+            sales: num(
+                find([
+                    "Sales",
+                    "sales",
+                    "SALES"
+                ])
+            ),
+
+
+            revenue: num(
+                find([
+                    "Revenue",
+                    "revenue",
+                    "REVENUE"
+                ])
+            )
+
+        };
+
+    }).filter(
+
+        x =>
+            x.product ||
+            x.category ||
+            x.sales ||
+            x.revenue
+
+    );
+
+}
+
+
+/* =========================================================
+   CSV IMPORT
+========================================================= */
+
+document
+    .getElementById(
+        "csvFile"
+    )
+    .addEventListener(
+        "change",
+        function(event) {
+
+            const file =
+                event.target.files[0];
+
+
+            if (!file)
+                return;
+
+
+            Papa.parse(
+
+                file,
+
+                {
+
+                    header: true,
+
+                    skipEmptyLines: true,
+
+                    complete:
+                        function(result) {
+
+                            const imported =
+                                normalize(
+                                    result.data
+                                );
+
+
+                            if (
+                                !imported.length
+                            ) {
+
+                                alert(
+                                    "No valid sales data found."
+                                );
+
+                                return;
+
+                            }
+
+
+                            salesData =
+                                imported;
+
+
+                            updateFilters();
+
+                            dashboard();
+
+
+                            document.getElementById(
+                                "fileStatus"
+                            ).textContent =
+
+                                `✓ CSV imported successfully — ${salesData.length} records`;
+
+                        }
+
+                }
+
+            );
+
+        }
+    );
+
+
+/* =========================================================
+   EXCEL IMPORT
+========================================================= */
+
+document
+    .getElementById(
+        "excelFile"
+    )
+    .addEventListener(
+        "change",
+        function(event) {
+
+            const file =
+                event.target.files[0];
+
+
+            if (!file)
+                return;
+
+
+            const reader =
+                new FileReader();
+
+
+            reader.onload =
+                function(e) {
+
+                    try {
+
+                        const workbook =
+                            XLSX.read(
+                                e.target.result,
+                                {
+                                    type:
+                                        "array"
+                                }
+                            );
+
+
+                        const sheet =
+                            workbook.Sheets[
+                                workbook.SheetNames[0]
+                            ];
+
+
+                        const rows =
+                            XLSX.utils
+                            .sheet_to_json(
+                                sheet
+                            );
+
+
+                        const imported =
+                            normalize(
+                                rows
+                            );
+
+
+                        if (
+                            !imported.length
+                        ) {
+
+                            alert(
+                                "No valid sales data found."
+                            );
+
+                            return;
+
+                        }
+
+
+                        salesData =
+                            imported;
+
+
+                        updateFilters();
+
+                        dashboard();
+
+
+                        document.getElementById(
+                            "fileStatus"
+                        ).textContent =
+
+                            `✓ Excel imported successfully — ${salesData.length} records`;
+
+                    }
+
+                    catch(error) {
+
+                        console.error(
+                            error
+                        );
+
+                        alert(
+                            "Unable to read Excel file."
+                        );
+
+                    }
+
+                };
+
+
+            reader.readAsArrayBuffer(
+                file
+            );
+
+        }
+    );
+
+
+/* =========================================================
+   SQLITE IMPORT
+========================================================= */
+
+document
+    .getElementById(
+        "dbFile"
+    )
+    .addEventListener(
+        "change",
+        async function(event) {
+
+            const file =
+                event.target.files[0];
+
+
+            if (!file)
+                return;
+
+
+            try {
+
+                const SQL =
+                    await initSqlJs({
+
+                        locateFile:
+                            filename =>
+
+                                `https://cdnjs.cloudflare.com/ajax/libs/sql.js/1.10.3/${filename}`
+
+                    });
+
+
+                const buffer =
+                    await file.arrayBuffer();
+
+
+                const database =
+                    new SQL.Database(
+                        new Uint8Array(
+                            buffer
+                        )
+                    );
+
+
+                const tables =
+                    database.exec(
+
+                        `SELECT name
+                         FROM sqlite_master
+                         WHERE type='table'
+                         AND name NOT LIKE 'sqlite_%'`
+
+                    );
+
+
+                if (
+                    !tables.length ||
+                    !tables[0].values.length
+                ) {
+
+                    alert(
+                        "No table found in database."
+                    );
+
+                    return;
+
+                }
+
+
+                const tableName =
+                    tables[0].values[0][0];
+
+
+                const result =
+                    database.exec(
+                        `SELECT * FROM "${tableName}"`
+                    );
+
+
+                if (!result.length) {
+
+                    alert(
+                        "No records found."
+                    );
+
+                    return;
+
+                }
+
+
+                const columns =
+                    result[0].columns;
+
+
+                const rows =
+                    result[0].values.map(
+                        values => {
+
+                            const obj = {};
+
+
+                            columns.forEach(
+                                (
+                                    column,
+                                    index
+                                ) => {
+
+                                    obj[column] =
+                                        values[index];
+
+                                }
+                            );
+
+
+                            return obj;
+
+                        }
+                    );
+
+
+                const imported =
+                    normalize(
+                        rows
+                    );
+
+
+                if (
+                    !imported.length
+                ) {
+
+                    alert(
+                        "Database does not contain the required sales columns."
+                    );
+
+                    return;
+
+                }
+
+
+                salesData =
+                    imported;
+
+
+                updateFilters();
+
+                dashboard();
+
+
+                document.getElementById(
+                    "fileStatus"
+                ).textContent =
+
+                    `✓ Database imported successfully — ${salesData.length} records`;
+
+            }
+
+            catch(error) {
+
+                console.error(
+                    error
+                );
+
+                alert(
+                    "Unable to read database."
+                );
+
+            }
+
+        }
+    );
+
+
+/* =========================================================
+   INITIALIZE
+========================================================= */
+
+updateFilters();
+
+dashboard();
+
+</script>
+
+</body>
+</html>
